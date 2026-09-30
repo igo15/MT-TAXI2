@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Moto Táxi Araçuaí</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- TELA DE LOGIN -->
+  <div id="tela-login" class="tela ativa">
+    <div class="login-container">
+      <div class="logo-animado">
+        <div class="moto-icon">🛵</div>
+        <h1>Moto Táxi</h1>
+        <p>Araçuaí – MG</p>
+      </div>
+      <form id="form-login" onsubmit="fazerLogin(event)">
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input type="text" id="usuario" placeholder="Usuário ou telefone" required value="cliente">
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="senha" placeholder="Senha" required value="123">
+        </div>
+        <button type="submit" class="btn-primario">
+          <span>Entrar</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+      <p class="dica">Login: <strong>cliente</strong> / senha <strong>123</strong><br><small style="opacity:0.8">Com backend: joao, carlos, pedro também funcionam</small><br><a href="motorista.html" style="color:#009624;font-size:13px;margin-top:8px;display:inline-block">→ Área do Mototaxista</a></p>
+    </div>
+  </div>
+
+  <!-- TELA PRINCIPAL (CLIENTE) -->
+  <div id="tela-app" class="tela">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="btn-icon" onclick="abrirMenu()"><i class="fas fa-bars"></i></button>
+        <h2>Moto Táxi Araçuaí</h2>
+      </div>
+      <div class="header-right">
+        <span id="nome-usuario">Olá, Cliente</span>
+        <button class="btn-icon" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+    </header>
+
+    <!-- Mapa -->
+    <div id="mapa" class="mapa"></div>
+
+    <!-- Painel inferior dinâmico -->
+    <div id="painel-inferior" class="painel-inferior">
+      
+      <!-- ETAPA 1: Solicitar corrida -->
+      <div id="etapa-solicitar" class="etapa ativa">
+        <div class="etapa-titulo">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>Para onde vamos?</span>
+        </div>
+        <div class="campo-endereco">
+          <div class="ponto origem">
+            <span class="bolinha verde"></span>
+            <input type="text" id="origem" placeholder="De onde você está?" value="Praça da Matriz, Araçuaí">
+          </div>
+          <div class="ponto destino">
+            <span class="bolinha vermelha"></span>
+            <input type="text" id="destino" placeholder="Para onde deseja ir?">
+          </div>
+        </div>
+        <div class="favoritos">
+          <span>Favoritos:</span>
+          <button class="chip" onclick="usarFavorito('Hospital São José')">🏥 Hospital</button>
+          <button class="chip" onclick="usarFavorito('Rodoviária')">🚌 Rodoviária</button>
+          <button class="chip" onclick="usarFavorito('Centro Comercial')">🛒 Centro</button>
+        </div>
+        <button class="btn-primario" onclick="calcularRota()">
+          <i class="fas fa-search"></i> Calcular corrida
+        </button>
+      </div>
+
+      <!-- ETAPA 2: Confirmar valor e pagamento -->
+      <div id="etapa-confirmar" class="etapa">
+        <div class="resumo-corrida">
+          <div class="distancia-preco">
+            <div>
+              <small>Distância estimada</small>
+              <strong id="distancia-km">0 km</strong>
+            </div>
+            <div class="preco">
+              <small>Valor estimado</small>
+              <strong id="valor-estimado">R$ 0,00</strong>
+            </div>
+          </div>
+          <p class="aviso-preco">R$ 4,00 por km • Valor atualiza conforme a quilometragem real</p>
+        </div>
+        <div class="pagamento">
+          <p>Como deseja pagar?</p>
+          <div class="opcoes-pagamento">
+            <label class="opcao-pag">
+              <input type="radio" name="pagamento" value="pix" checked>
+              <div class="card-pag">
+                <i class="fab fa-pix"></i>
+                <span>Pix</span>
+              </div>
+            </label>
+            <label class="opcao-pag">
+              <input type="radio" name="pagamento" value="dinheiro">
+              <div class="card-pag">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Dinheiro</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="botoes-acao">
+          <button class="btn-secundario" onclick="voltarEtapa('solicitar')">Voltar</button>
+          <button class="btn-primario" onclick="solicitarCorrida()">
+            <i class="fas fa-motorcycle"></i> Solicitar Moto
+          </button>
+        </div>
+      </div>
+
+      <!-- ETAPA 3: Procurando mototaxista -->
+      <div id="etapa-procurando" class="etapa">
+        <div class="procurando-animacao">
+          <div class="radar">
+            <div class="onda"></div>
+            <div class="onda"></div>
+            <div class="onda"></div>
+            <div class="moto-central">🛵</div>
+          </div>
+          <h3>Procurando mototaxista...</h3>
+          <p>Estamos localizando o mais próximo em Araçuaí</p>
+          <div class="status-texto" id="status-busca">Buscando disponíveis...</div>
+        </div>
+        <button class="btn-secundario" onclick="cancelarCorrida()">Cancelar</button>
+      </div>
+
+      <!-- ETAPA 4: Mototaxista a caminho -->
+      <div id="etapa-caminho" class="etapa">
+        <div class="motorista-info">
+          <div class="avatar-container">
+            <div class="avatar-animado" id="avatar-moto">
+              <span class="emoji-moto">🛵</span>
+              <span class="nome-curto">João</span>
+            </div>
+            <div class="estrelas">★★★★☆ <small>4.8</small></div>
+          </div>
+          <div class="dados-motorista">
+            <strong id="nome-motorista">João Silva</strong>
+            <p>Honda CG 160 • Placa ABC-1D23</p>
+            <p class="tempo-chegada">Chega em <span id="tempo-eta">3 min</span></p>
+          </div>
+          <button class="btn-favorito" id="btn-favorito" onclick="toggleFavorito()">
+            <i class="far fa-heart"></i>
+          </button>
+        </div>
+        <div class="barra-progresso">
+          <div class="progresso-fill" id="barra-progresso"></div>
+        </div>
+        <div class="valor-ao-vivo">
+          <span>Valor atualizado:</span>
+          <strong id="valor-ao-vivo">R$ 0,00</strong>
+        </div>
+        <div class="botoes-acao">
+          <button class="btn-secundario" onclick="cancelarCorrida()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button class="btn-primario" onclick="ligarMotorista()">
+            <i class="fas fa-phone"></i> Ligar
+          </button>
+        </div>
+      </div>
+
+      <!-- ETAPA 5: Mototaxista chegou -->
+      <div id="etapa-chegou" class="etapa">
+        <div class="chegou-animacao">
+          <div class="check-grande">✓</div>
+          <h3>Mototaxista chegou!</h3>
+          <p id="msg-chegada">João está te esperando no local de origem.</p>
+          <div class="valor-final">
+            <span>Valor da corrida:</span>
+            <strong id="valor-final">R$ 0,00</strong>
+          </div>
+        </div>
+        <button class="btn-primario" onclick="finalizarCorrida()">
+          <i class="fas fa-check"></i> Confirmar e iniciar viagem
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de notificações -->
+  <div id="toast" class="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/sounds.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
